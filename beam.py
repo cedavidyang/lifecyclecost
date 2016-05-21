@@ -2,6 +2,9 @@ import numpy as np
 import scipy.integrate as integrate
 
 from section import Price, Cost, Material, Geometry
+from section import RHO_FRP, RHO_STEEL, RHO_CONC
+from section import frpdegrade
+
 import sys
 
 class Beam(object):
@@ -26,10 +29,14 @@ class Beam(object):
         if self.cost.price is None:
             print "Cost is not initiated properly"
             sys.exit(1)
-        conccost = self.geo.Ac*self.cost.price.conc
-        steelcost = self.geo.As*self.cost.price.steel
-        fbcost = self.geo.Afb*self.cost.price.fb
-        ftcost = self.geo.Aft*self.cost.price.ft
+        pconc = self.cost.price.matprice['Cconc']
+        psteel = self.cost.price.matprice['Csteel']
+        pfb = self.cost.price.matprice['Cfb']
+        pft = self.cost.price.matprice['Cft']
+        conccost = self.geo.Ac*1e-6*pconc
+        steelcost = self.geo.As*1e-6*RHO_STEEL*1e-3*psteel
+        fbcost = self.geo.Afb*1e-6*RHO_FRP*1e-3*pfb
+        ftcost = self.geo.Aft*1e-6*RHO_FRP*pft
         self.cost.setmatcost(conccost, steelcost, fbcost, ftcost)
         return self.cost.matcost
 
@@ -40,12 +47,49 @@ class Beam(object):
         if self.cost.price is None:
             print "Cost is not initiated properly"
             sys.exit(1)
-        conccost = self.geo.Ac*self.cost.price.transcost('concrete', distance)
-        steelcost = self.geo.As*self.cost.price.transcost('steel', distance)
-        fbcost = self.geo.Afb*self.cost.price.transcost('fb', distance)
-        ftcost = self.geo.Aft*self.cost.price.transcost('ft', distance)
+        if self.geo.rtype.lower() == 'rc':
+            concmass = self.geo.Ac*1e-6*RHO_CONC*1e-3
+            sandratio = 250./903
+            waterratio = 1./301
+            sandcost = sandratio*concmass*self.cost.price.transprice('sand', distance)
+            watercost = waterratio*concmass*self.cost.price.transprice('water', distance)
+            conccost = sandcost+watercost
+            steelmass = self.geo.As*1e-6*RHO_STEEL*1e-3
+            steelcost = steelmass*self.cost.price.transprice('steel', distance)
+            fbcost = 0.
+            ftcost = 0.
+        else:
+            conccost = 0.
+            steelcost = 0.
+            fbmass = self.geo.Afb*1e-6*RHO_FRP*1e-3
+            fbcost = fbmass*self.cost.price.transprice('fb', distance)
+            ftmass = self.geo.Aft*1e-6*RHO_FRP*1e-3
+            ftcost = ftmass*self.cost.price.transprice('ft', distance)
         self.cost.settranscost(conccost, steelcost, fbcost, ftcost)
-        return self.cost.matcost
+        return self.cost.transcost
+
+    def directmntcost(self, mntplan):
+        pdirect = self.cost.price.mntprice['direct']
+        pindirect = self.cost.price.mntprice['indirect']
+        v = self.cost.price.mntprice['discount']
+        nmnt = mntplan['Mt'].size
+
+        # price data
+        Cwb = pdirect['Cwb']
+        Crm = pdirect['Crm']
+        Cbc = pdirect['Cwb']
+        Ctp = pdirect['Crm']
+        # geo data
+        Arm2 = self.geo.Arepair*1e-6    # in m2
+        cover = self.geo.cover    # in mm
+        Vcover = Arm2*(cover/10)
+        # directcost
+        directcost = 0.
+        for t in mntplan['Mt']:
+            cost = ((Cwb+Crm)*Vcover + (Cbc+Ctp)*Arm2)/(1+v)**t
+            directcost += cost
+        self.cost.mntcost = directcost
+        return self.cost.mntcost
 
     def getmoment(self, nd=100, carray=None):
         """ nh: number of discretiztions along beam (effective) depth d
@@ -90,6 +134,43 @@ class Beam(object):
         self.capacity = M
         return M,csol
 
+    def lifecycleR(self, life, mntplan):
+        ds = self.geo.ds    # rebar diameter
+        tarray = np.arange(1, life+1, dtype=float)
+        if self.geo.rtype.lower() == 'rc':
+            darray = ds*np.ones(tarray.shape)
+            Rarray = np.ones(tarray.shape)
+            tinit = 10.
+            rcorr = 0.127    # mm/yr
+            for i,t in enumerate(tarray):
+                if t<tinit:
+                    darray[i] = ds
+                    Rarray[i] = 1.0
+                else:
+                    # look for the previous maintenance
+                    if mntplan['Mt'] is None:
+                        indx=0
+                    else:
+                        indx = np.searchsorted(mntplan['Mt'], t)
+                    if indx==0:    # no maintenance is applied
+                        dst = ds-rcorr*(t-tinit)
+                        darray[i] = dst
+                        Rarray[i] = (dst/ds)**2
+                    else:
+                        tlastmnt = mntplan['Mt'][indx-1]
+                        dt = t-tlastmnt
+                        if dt<mntplan['Me']:
+                            darray[i] = darray[i-1]
+                            Rarray[i] = Rarray[i-1]
+                        else:
+                            dst = darray[i-1]-rcorr
+                            darray[i] = dst
+                            Rarray[i] = (dst/ds)**2
+        elif self.geo.rtype.lower() == 'frp':
+            tweek = tarray*52
+            Rarray = frpdegrade(tweek)
+        return Rarray
+
 
 def getrcbeam(price):
     cost = Cost(price)
@@ -125,6 +206,7 @@ def getrcbeam(price):
             b = 400.
         return b
     geo = Geometry('rc', h, Ac, Afb, Aft, As, xf, xs, bdist)
+    geo.addprop({'ds':28.65})
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam
@@ -166,14 +248,12 @@ def getfrpbeam(price):
     geo = Geometry('frp', h, Ac, Afb, Aft, As, xf, xs, bdist)
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
-    print 'material cost = {}'.format(beam.matcost())
-    M,c = beam.getmoment()
-    print 'capacity = {} kN-m; neutral axis at x={}'.format(M/1e6, c)
     return beam
 
 
 if __name__ == '__main__':
-    price = Price(1.0, 1.0, 1.0, 1.0)
+    matprice = {'Cconc': 104.57*9, 'Csteel': 1.16e3*9, 'Cfb': 1.16e3*9, 'Cft': 1.16e3*9}
+    price = Price(matprice=matprice)
     cost = Cost(price)
     ## RC example ex4.1, 4.2, 4.10, 4.11, 4.12 (Shu Shilin concrete textbook) checked
     # define material
