@@ -34,9 +34,9 @@ class Beam(object):
         pfb = self.cost.price.matprice['Cfb']
         pft = self.cost.price.matprice['Cft']
         conccost = self.geo.Ac*1e-6*pconc
-        steelcost = self.geo.As*1e-6*RHO_STEEL*1e-3*psteel
-        fbcost = self.geo.Afb*1e-6*RHO_FRP*1e-3*pfb
-        ftcost = self.geo.Aft*1e-6*RHO_FRP*pft
+        steelcost = np.sum(self.geo.As)*1e-6*RHO_STEEL*1e-3*psteel
+        fbcost = np.sum(self.geo.Afb)*1e-6*RHO_FRP*1e-3*pfb
+        ftcost = self.geo.Aft*1e-6*RHO_FRP*1e-3*pft
         self.cost.setmatcost(conccost, steelcost, fbcost, ftcost)
         return self.cost.matcost
 
@@ -49,19 +49,23 @@ class Beam(object):
             sys.exit(1)
         if self.geo.rtype.lower() == 'rc':
             concmass = self.geo.Ac*1e-6*RHO_CONC*1e-3
-            sandratio = 250./903
-            waterratio = 1./301
-            sandcost = sandratio*concmass*self.cost.price.transprice('sand', distance)
-            watercost = waterratio*concmass*self.cost.price.transprice('water', distance)
-            conccost = sandcost+watercost
-            steelmass = self.geo.As*1e-6*RHO_STEEL*1e-3
+            # sandratio = 250./903
+            # waterratio = 1./301
+            # sandcost = sandratio*concmass*self.cost.price.transprice('sand', distance)
+            # watercost = waterratio*concmass*self.cost.price.transprice('water', distance)
+            # conccost = sandcost+watercost
+            conccost = concmass*self.cost.price.transprice('concrete', distance)
+            steelmass = np.sum(self.geo.As)*1e-6*RHO_STEEL*1e-3
             steelcost = steelmass*self.cost.price.transprice('steel', distance)
             fbcost = 0.
             ftcost = 0.
         else:
-            conccost = 0.
+            sandratio = 250./903
+            waterratio = 1./301
+            concmass = self.geo.Ac*1e-6*RHO_CONC*1e-3
+            conccost = concmass*(1-sandratio-waterratio)*self.cost.price.transprice('concrete', distance)
             steelcost = 0.
-            fbmass = self.geo.Afb*1e-6*RHO_FRP*1e-3
+            fbmass = np.sum(self.geo.Afb)*1e-6*RHO_FRP*1e-3
             fbcost = fbmass*self.cost.price.transprice('fb', distance)
             ftmass = self.geo.Aft*1e-6*RHO_FRP*1e-3
             ftcost = ftmass*self.cost.price.transprice('ft', distance)
@@ -176,7 +180,7 @@ def getrcbeam(price):
     cost = Cost(price)
     fc = 20.7
     ecu = 0.0038
-    fr = 496.; Er = 200000.
+    fr = 276.; Er = 200000.
     eru = fr/Er*100.
     Ec = 4700*np.sqrt(fc)
     fcp = 0.9*fc
@@ -190,23 +194,23 @@ def getrcbeam(price):
     reinss = lambda x: np.minimum(x*Er, fr)
     mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
     # define geometry
-    h=790.
-    Ac = 400.*(790.-190)+2600.*190.
+    h=800.
+    Ac = 400.*(800.-200)+2500.*200.
     Afb = np.array([0.])
     Aft = 0.
-    As = np.array([8*645.])
+    As = np.array([8*1006.])
     xf = np.array([0.])
-    xs = np.array([687.3+2*(36-29)])
+    xs = np.array([700.])
     def bdist(x):
-        if x<0 or x>790:
+        if x<0 or x>800:
             b = 0.
-        elif x>=0 and x<190:
-            b = 2600.
+        elif x>=0 and x<200:
+            b = 2500.
         else:
             b = 400.
         return b
     geo = Geometry('rc', h, Ac, Afb, Aft, As, xf, xs, bdist)
-    geo.addprop({'ds':28.65})
+    geo.addprop({'ds':35.81})
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam
@@ -216,7 +220,7 @@ def getfrpbeam(price):
     cost = Cost(price)
     fc = 20.7
     ecu = 0.0038
-    fr = 496.; Er = 44800.
+    fr = 500.*0.80; Er = 45000.
     eru = fr/Er
     Ec = 4700*np.sqrt(fc)
     fcp = 0.9*fc
@@ -230,22 +234,23 @@ def getfrpbeam(price):
     reinss = lambda x: np.minimum(x*Er, fr)
     mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
     # define geometry
-    h=790.
-    Ac = 400.*(790.-190)+2600.*190.
-    Afb = np.array([8*645.])
+    h=800.
+    Ac = 400.*(800.-200)+2500.*200.
+    Afb = np.array([8*1006.])
     Aft = 0.
     As = np.array([0.])
-    xf = np.array([687.3+2*(36-29)])
+    xf = np.array([720.])
     xs = np.array([0.])
     def bdist(x):
-        if x<0 or x>790:
+        if x<0 or x>800:
             b = 0.
-        elif x>=0 and x<190:
-            b = 2600.
+        elif x>=0 and x<200:
+            b = 2500.
         else:
             b = 400.
         return b
     geo = Geometry('frp', h, Ac, Afb, Aft, As, xf, xs, bdist)
+    geo.addprop({'ds':35.81})
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam

@@ -81,15 +81,17 @@ class Price(object):
 
     def transprice(self, cargo, distance):
         if cargo.lower() == 'sand':
-            transprice = distance
+            transprice = 0.035*8*distance
         elif cargo.lower() == 'water':
-            transprice = distance
+            transprice = 0.035*8*distance
+        elif cargo.lower() == 'concrete':
+            transprice = 0.035*8*distance
         elif cargo.lower() == 'steel':
-            transprice = distance
+            transprice = 0.035*8*distance
         elif cargo.lower() == 'fb':
-            transprice = distance
+            transprice = 0.035*8*distance
         elif cargo.lower() == 'ft':
-            transprice = distance
+            transprice = 0.035*8*distance
         else:
             print "unknow type of cargo"
             sys.exit(1)

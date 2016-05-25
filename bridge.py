@@ -3,7 +3,7 @@ import scipy.integrate as integrate
 
 from section import Price, Cost, Material, Geometry
 from beam import Beam, getrcbeam, getfrpbeam
-from column import Column
+from column import Column, getrccolumn, getfrpcolumn
 
 import sys
 
@@ -87,6 +87,8 @@ class Bridge(object):
         Otruck = pindirect['Otruck']
 
         # indirect cost
+        # Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*360*Adt
+        # Ctime = (Cwage*Ocar*(1-Ttruck)+(Cdriver*Otruck+Ccargo)*Ttruck)*Ldetour*360*Adt/speed
         indirectcost = 0.
         for t in allmt:
             Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*Tdetour*Adt/(1+v)**t
@@ -98,16 +100,17 @@ class Bridge(object):
 
 if __name__ == '__main__':
     import copy
-    # RC bridge
+    # bridge distance
+    distance = 100.
     # price information
-    matprice = {'Cconc': 104.57*8.72, 'Csteel': 1.16e3*8.72,
+    matprice = {'Cconc': 104.57*8.72, 'Csteel': 4781.,
             'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
     price = Price(matprice=matprice)
     rcbeam = getrcbeam(price)
     rcdeck = copy.deepcopy(rcbeam)
     rccolumn = copy.deepcopy(rcbeam)
-    rcbridge = Bridge(rcbeam, 10, rccolumn, 0, rcdeck,
-            span=9.1, width=11.6, height=6., distance=10.)
+    rcbridge = Bridge(rcbeam, 1, rccolumn, 0, rcdeck,
+            span=8.0, width=0.0, height=6., distance=distance)
 
     # initial cost
     rcmatcost = rcbridge.matcost()
@@ -117,12 +120,12 @@ if __name__ == '__main__':
 
     # maintenance cost
     rcbridge.beam.geo.addprop({'Arepair':400*1000.,'cover':40.})
-    rcbridge.column.geo.addprop({'Arepair':400*1000.,'cover':40.})
+    rcbridge.column.geo.addprop({'Arepair':np.pi*675*1000.,'cover':40.})
     Arepair = 1000.*1000.; cover=30.
     rcbridge.deck.geo.addprop({'Arepair':Arepair,'cover':cover})
 
     discount = 0.02
-    mntpricedirect = {'Cwb': 11.5*9, 'Crm': 43.28*9, 'Cbc': 16.41*9, 'Ctp': 53.71*9}
+    mntpricedirect = {'Cwb': 11.5*8.72, 'Crm': 43.28*8.72, 'Cbc': 16.41*8.72, 'Ctp': 0.0*9}
     mntpriceindirect = {'Cruncar': 0.07*9, 'Cruntruck': 0.34*9, 'Cwage': 20.77*9, 'Cdriver': 24.54*9,
             'Ccargo': 3.64*9, 'Ttruck': 0.12, 'ADT': 8500., 'Ldetour': 2.9, 'Tdetour': 7, 'S': 50,
             'Ocar': 1.5, 'Otruck': 1.05}
@@ -132,25 +135,65 @@ if __name__ == '__main__':
     rcbridge.column.cost.price.setmntprice(mntprice)
     rcbridge.deck.cost.price.setmntprice(mntprice)
 
+    # mntplan = {'Mt': np.arange(20., 101., 30.), 'Me': 20.}
     mntplan = {'Mt': np.arange(20., 101., 30.), 'Me': 20.}
     bridgemntplan = {'beam':mntplan, 'column':mntplan, 'deck':mntplan}
     mntplanN = {'Mt': None, 'Me': 10.}
-    rcRarray = rcbridge.beam.lifecycleR(75, mntplan)
-    rcRarrayN = rcbridge.beam.lifecycleR(75, mntplanN)
+    rcRarray = rcbridge.beam.lifecycleR(100, mntplan)
+    rcRarrayN = rcbridge.beam.lifecycleR(100, mntplanN)
     rcmntcost = rcbridge.mntcost(bridgemntplan)
     print 'RC maintenace cost = {}'.format(rcmntcost)
 
-    # # FRP bridge
-    # # price information
-    # matprice = {'Cconc': 104.57*8.72-100, 'Csteel': 1.16e3*8.72,
+    # FRP bridge
+    # price information
+    matprice = {'Cconc': 104.57*8.72-100, 'Csteel': 4871.,
+            'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
+    price = Price(matprice=matprice)
+    frpbeam = getfrpbeam(price)
+    frpdeck = copy.deepcopy(frpbeam)
+    frpcolumn = copy.deepcopy(frpbeam)
+    frpbridge = Bridge(frpbeam, 1, frpcolumn, 0, frpdeck,
+            span=8.0, width=0.0, height=6., distance=distance)
+    # initial cost
+    frpmatcost = frpbridge.matcost()
+    frptranscost = frpbridge.transcost()
+    print 'FRP material cost = {}'.format(frpmatcost)
+    print 'FRP transportation cost = {}'.format(frptranscost)
+    # maintenance cost
+    mntplanN = {'Mt': None, 'Me': 10.}
+    frpRarray = frpbeam.lifecycleR(100, mntplanN)
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(1,101), rcRarray)
+    plt.plot(np.arange(1,101), rcRarrayN)
+    plt.plot(np.arange(1,101), frpRarray)
+    print "rc residual = {}".format(rcRarray[np.arange(1,101)==50])
+
+
+    # # RC bridge pier
+    # matprice = {'Cconc': 104.57*8.72, 'Csteel': 4871.,
             # 'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
     # price = Price(matprice=matprice)
-    # frpbeam = getfrpbeam(price)
+    # rccolumn = getrccolumn(price)
+    # rcbridge = Bridge(rcbeam, 0, rccolumn, 1, rcdeck,
+            # span=10., width=0.0, height=6., distance=1.)
     # # initial cost
-    # frpmatcost = frpbeam.matcost()
-    # frptranscost = frpbeam.transcost(10.)
+    # rcmatcost = rcbridge.matcost()
+    # rctranscost = rcbridge.transcost()
+    # print 'RC material cost = {}'.format(rcmatcost)
+    # print 'RC transportation cost = {}'.format(rctranscost)
+    # # maintenance cost
+    # rcbridge.column.geo.addprop({'Arepair':np.pi*675*1000.,'cover':40.})
+    # rcbridge.column.cost.price.setmntprice(mntprice)
+    # rcmntcost = rcbridge.mntcost(bridgemntplan)
+    # print 'RC maintenace cost = {}'.format(rcmntcost)
+
+    # # FRP bridge pier
+    # matprice = {'Cconc': 104.57*8.72-100, 'Csteel': 4871.,
+            # 'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
+    # price = Price(matprice=matprice)
+    # frpcolumn = getfrpcolumn(price)
+    # # initial cost
+    # frpmatcost = frpcolumn.matcost()
+    # frptranscost = frpcolumn.transcost(1.)
     # print 'FRP material cost = {}'.format(frpmatcost)
     # print 'FRP transportation cost = {}'.format(frptranscost)
-    # # maintenance cost
-    # mntplanN = {'Mt': None, 'Me': 10.}
-    # frpRarray = frpbeam.lifecycleR(75, mntplanN)
