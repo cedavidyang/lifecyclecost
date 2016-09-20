@@ -171,16 +171,16 @@ class Beam(object):
                             darray[i] = dst
                             Rarray[i] = (dst/ds)**2
         elif self.geo.rtype.lower() == 'frp':
-            tweek = tarray*52
-            Rarray = frpdegrade(tweek)
+            tday = tarray*360
+            Rarray = frpdegrade(tday)
         return Rarray
 
 
 def getrcbeam(price):
     cost = Cost(price)
-    fc = 20.7
-    ecu = 0.0038
-    fr = 276.; Er = 200000.
+    fc = 30.
+    ecu = 0.003
+    fr = 420.; Er = 200000.
     eru = fr/Er*100.
     Ec = 4700*np.sqrt(fc)
     fcp = 0.9*fc
@@ -189,7 +189,7 @@ def getrcbeam(price):
         if ec<=eco:
             sc = fcp*(2*ec/eco-(ec/eco)**2)
         else:
-            sc = fcp-0.15*fcp*(ec-eco)/(0.0038-eco)
+            sc = fcp-0.15*fcp*(ec-eco)/(0.003-eco)
         return sc
     reinss = lambda x: np.minimum(x*Er, fr)
     mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
@@ -198,9 +198,9 @@ def getrcbeam(price):
     Ac = 400.*(800.-200)+2500.*200.
     Afb = np.array([0.])
     Aft = 0.
-    As = np.array([8*1006.])
+    As = np.array([4*819.+2*509])
     xf = np.array([0.])
-    xs = np.array([700.])
+    xs = np.array([700])
     def bdist(x):
         if x<0 or x>800:
             b = 0.
@@ -210,7 +210,7 @@ def getrcbeam(price):
             b = 400.
         return b
     geo = Geometry('rc', h, Ac, Afb, Aft, As, xf, xs, bdist)
-    geo.addprop({'ds':35.81})
+    geo.addprop({'ds':25.4})
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam
@@ -218,9 +218,9 @@ def getrcbeam(price):
 
 def getfrpbeam(price):
     cost = Cost(price)
-    fc = 20.7
-    ecu = 0.0038
-    fr = 500.*0.80; Er = 45000.
+    fc = 30.
+    ecu = 0.003
+    fr = 550.*0.2; Er = 45000.
     eru = fr/Er
     Ec = 4700*np.sqrt(fc)
     fcp = 0.9*fc
@@ -229,14 +229,14 @@ def getfrpbeam(price):
         if ec<=eco:
             sc = fcp*(2*ec/eco-(ec/eco)**2)
         else:
-            sc = fcp-0.15*fcp*(ec-eco)/(0.0038-eco)
+            sc = fcp-0.15*fcp*(ec-eco)/(0.003-eco)
         return sc
     reinss = lambda x: np.minimum(x*Er, fr)
     mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
     # define geometry
     h=800.
     Ac = 400.*(800.-200)+2500.*200.
-    Afb = np.array([8*1006.])
+    Afb = np.array([4*819.+4*661.])
     Aft = 0.
     As = np.array([0.])
     xf = np.array([720.])
@@ -250,7 +250,7 @@ def getfrpbeam(price):
             b = 400.
         return b
     geo = Geometry('frp', h, Ac, Afb, Aft, As, xf, xs, bdist)
-    geo.addprop({'ds':35.81})
+    geo.addprop({'ds':32.26})
     # define beam
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam

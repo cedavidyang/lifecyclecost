@@ -5,6 +5,7 @@ import sys
 RHO_STEEL = 7800.    #kg/m3
 RHO_FRP = 1800.
 RHO_CONC = 2500.
+RHO_SAND = 1600.
 
 class Geometry(object):
     def __init__(self, rtype, h, Ac, Afb, Aft, As, xf, xs, bdist):
@@ -41,6 +42,17 @@ class Geometry(object):
         except KeyError:
             pass
 
+    def addebprop(self, b, h, bf, tf, frpend, shear, span, d, dcmp):
+        self.b = b
+        self.h = h
+        self.bf = bf
+        self.tf = tf
+        self.frpend = frpend
+        self.shear = shear
+        self.span = span
+        self.d = d
+        self.dcmp = dcmp
+
 
 class Material(object):
     def __init__(self, fc, fr, eco, ecu, eru, concss, reinss):
@@ -54,7 +66,7 @@ class Material(object):
 
 
 class Cost(object):
-    def __init__(self, price):
+    def __init__(self, price=None):
         self.price = price
 
     def setmatcost(self, conccost, steelcost, fbcost, ftcost):
@@ -98,7 +110,7 @@ class Price(object):
         return transprice
 
 
-def frpdegrade(t):
+def frpdegrade(tday):
     """ t in week"""
-    r = (1-0.8)*np.exp(-t/216.1)+0.8
+    r = (1-0.75)*np.exp(-tday/339.2)+0.75
     return r

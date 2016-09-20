@@ -87,13 +87,15 @@ class Bridge(object):
         Otruck = pindirect['Otruck']
 
         # indirect cost
-        # Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*360*Adt
-        # Ctime = (Cwage*Ocar*(1-Ttruck)+(Cdriver*Otruck+Ccargo)*Ttruck)*Ldetour*360*Adt/speed
-        indirectcost = 0.
-        for t in allmt:
-            Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*Tdetour*Adt/(1+v)**t
-            Ctime = (Cwage*Ocar*(1-Ttruck)+(Cdriver*Otruck+Ccargo)*Ttruck)*Ldetour*Tdetour*Adt/speed/(1+v)**t
-            indirectcost += (Crun+Ctime)
+        Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*Tdetour*Adt
+        Ctime = (Cwage*Ocar*(1-Ttruck)+(Cdriver*Otruck+Ccargo)*Ttruck)*Ldetour*Tdetour*Adt/speed
+        # Ctime = 0.
+        indirectcost = (Crun+Ctime)
+        # indirectcost = 0.
+        # for t in allmt:
+            # Crun = (Cruncar*(1-Ttruck)+Cruntruck*Ttruck)*Ldetour*Tdetour*Adt/(1+v)**t
+            # Ctime = (Cwage*Ocar*(1-Ttruck)+(Cdriver*Otruck+Ccargo)*Ttruck)*Ldetour*Tdetour*Adt/speed/(1+v)**t
+            # indirectcost += (Crun+Ctime)
 
         return (directcost, indirectcost)
 
@@ -101,10 +103,14 @@ class Bridge(object):
 if __name__ == '__main__':
     import copy
     # bridge distance
-    distance = 100.
+    distance = 10.
     # price information
-    matprice = {'Cconc': 104.57*8.72, 'Csteel': 4781.,
-            'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
+    # matprice = {'Cconc': 945.-100, 'Csteel': 4855.74,
+            # 'Cfb': 39810.23, 'Cft': 39810.23}
+    # matprice = {'Cconc': 945.-100, 'Csteel': 3200.,
+            # 'Cfb': 27812, 'Cft': 27812.}
+    matprice = {'Cconc': 945.-100, 'Csteel': 5231.,
+            'Cfb': 27812, 'Cft': 27812.}
     price = Price(matprice=matprice)
     rcbeam = getrcbeam(price)
     rcdeck = copy.deepcopy(rcbeam)
@@ -126,8 +132,8 @@ if __name__ == '__main__':
 
     discount = 0.02
     mntpricedirect = {'Cwb': 11.5*8.72, 'Crm': 43.28*8.72, 'Cbc': 16.41*8.72, 'Ctp': 0.0*9}
-    mntpriceindirect = {'Cruncar': 0.07*9, 'Cruntruck': 0.34*9, 'Cwage': 20.77*9, 'Cdriver': 24.54*9,
-            'Ccargo': 3.64*9, 'Ttruck': 0.12, 'ADT': 8500., 'Ldetour': 2.9, 'Tdetour': 7, 'S': 50,
+    mntpriceindirect = {'Cruncar': 0.08*7.7, 'Cruntruck': 0.375*7.7, 'Cwage': 22.82*7.7, 'Cdriver': 26.97*7.7,
+            'Ccargo': 4*7.7, 'Ttruck': 0.12, 'ADT': 8500., 'Ldetour': 2.9, 'Tdetour': 360., 'S': 50,
             'Ocar': 1.5, 'Otruck': 1.05}
     mntprice = {'direct':mntpricedirect, 'indirect':mntpriceindirect, 'discount':discount}
 
@@ -146,8 +152,12 @@ if __name__ == '__main__':
 
     # FRP bridge
     # price information
-    matprice = {'Cconc': 104.57*8.72-100, 'Csteel': 4871.,
-            'Cfb': 3.90e3*7.77, 'Cft': 3.90e3*7.77}
+    # matprice = {'Cconc': 884.3-100, 'Csteel': 4855.74,
+            # 'Cfb': 39810.23, 'Cft': 39810.23}
+    # matprice = {'Cconc': 884.3-100, 'Csteel': 3200.,
+            # 'Cfb': 27812, 'Cft': 27812.}
+    matprice = {'Cconc': 884.3-100, 'Csteel': 5231.,
+            'Cfb': 28336., 'Cft': 28336.}
     price = Price(matprice=matprice)
     frpbeam = getfrpbeam(price)
     frpdeck = copy.deepcopy(frpbeam)
