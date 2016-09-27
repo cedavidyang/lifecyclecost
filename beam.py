@@ -216,6 +216,46 @@ def getrcbeam(price):
     return beam
 
 
+def getrcbeam_cice2016(price=None):
+    cost = Cost(price)
+    fc = 30.
+    ecu = 0.003
+    fr = 420.; Er = 200000.
+    eru = fr/Er*100.
+    Ec = 4700*np.sqrt(fc)
+    fcp = 0.85*fc
+    eco = 1.8*fcp/Ec
+    def concss(ec):
+        if ec<=eco:
+            sc = fcp*(2*ec/eco-(ec/eco)**2)
+        else:
+            sc = fcp-0.15*fcp*(ec-eco)/(0.003-eco)
+        return sc
+    reinss = lambda x: np.minimum(x*Er, fr)
+    mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
+    # define geometry
+    h=790.
+    Ac = 400.*(790.-190)+2600.*190.
+    Afb = np.array([0.])
+    Aft = 0.
+    As = np.array([4*819.+2*819.])
+    xf = np.array([0.])
+    xs = np.array([700])
+    def bdist(x):
+        if x<0 or x>790.:
+            b = 0.
+        elif x>=0 and x<190.:
+            b = 2600.
+        else:
+            b = 400.
+        return b
+    geo = Geometry('rc', h, Ac, Afb, Aft, As, xf, xs, bdist)
+    geo.addprop({'ds':32.26})
+    # define beam
+    beam = Beam(geo=geo, mat=mat, cost=cost)
+    return beam
+
+
 def getfrpbeam(price):
     cost = Cost(price)
     fc = 30.
@@ -255,6 +295,86 @@ def getfrpbeam(price):
     beam = Beam(geo=geo, mat=mat, cost=cost)
     return beam
 
+
+def getfrpbeam_cice2016(price=None):
+    cost = Cost(price)
+    fc = 30.
+    ecu = 0.003
+    fr = 550.; Er = 45000.
+    eru = fr/Er
+    Ec = 4700*np.sqrt(fc)
+    fcp = 0.9*fc
+    eco = 1.8*fcp/Ec
+    def concss(ec):
+        if ec<=eco:
+            sc = fcp*(2*ec/eco-(ec/eco)**2)
+        else:
+            sc = fcp-0.15*fcp*(ec-eco)/(0.003-eco)
+        return sc
+    reinss = lambda x: np.minimum(x*Er, fr)
+    mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
+    # define geometry
+    h=790.
+    Ac = 400.*(790.-190.)+2600.*190.
+    # Afb = np.array([4*819.+4*661.])
+    Afb = np.array([8*819.+2*819.])
+    Aft = 0.
+    As = np.array([0.])
+    xf = np.array([710.])
+    xs = np.array([0.])
+    def bdist(x):
+        if x<0 or x>790:
+            b = 0.
+        elif x>=0 and x<190.:
+            b = 2600.
+        else:
+            b = 400.
+        return b
+    geo = Geometry('frp', h, Ac, Afb, Aft, As, xf, xs, bdist)
+    geo.addprop({'ds':32.26})
+    # define beam
+    beam = Beam(geo=geo, mat=mat, cost=cost)
+    return beam
+
+
+def getfrpcreep_cice2016(price=None):
+    cost = Cost(price)
+    fc = 30.
+    ecu = 0.003
+    fr = 550.*0.2; Er = 45000.
+    eru = fr/Er
+    Ec = 4700*np.sqrt(fc)
+    fcp = 0.9*fc
+    eco = 1.8*fcp/Ec
+    def concss(ec):
+        if ec<=eco:
+            sc = fcp*(2*ec/eco-(ec/eco)**2)
+        else:
+            sc = fcp-0.15*fcp*(ec-eco)/(0.003-eco)
+        return sc
+    reinss = lambda x: np.minimum(x*Er, fr)
+    mat = Material(fc, fr, eco, ecu, eru, concss, reinss)
+    # define geometry
+    h=790.
+    Ac = 400.*(790.-190)+2600.*190.
+    Afb = np.array([8*819.+2*819.])
+    Aft = 0.
+    As = np.array([0.])
+    xf = np.array([710.])
+    xs = np.array([0.])
+    def bdist(x):
+        if x<0 or x>790:
+            b = 0.
+        elif x>=0 and x<190:
+            b = 2600.
+        else:
+            b = 400.
+        return b
+    geo = Geometry('frp', h, Ac, Afb, Aft, As, xf, xs, bdist)
+    geo.addprop({'ds':32.26})
+    # define beam
+    beam = Beam(geo=geo, mat=mat, cost=cost)
+    return beam
 
 if __name__ == '__main__':
     matprice = {'Cconc': 104.57*9, 'Csteel': 1.16e3*9, 'Cfb': 1.16e3*9, 'Cft': 1.16e3*9}
