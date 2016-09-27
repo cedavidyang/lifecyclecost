@@ -6,6 +6,7 @@ from section import RHO_FRP, RHO_STEEL, RHO_CONC
 from section import frpdegrade
 
 import sys
+import copy
 
 class Beam(object):
     def __init__(self, geo=None, mat=None, cost=None):
@@ -175,6 +176,59 @@ class Beam(object):
             Rarray = frpdegrade(tday)
         return Rarray
 
+
+    def lifecycleR_exact(self, life, mntplan):
+        ds = self.geo.ds    # rebar diameter
+        tarray = np.arange(1, life+1, dtype=float)
+        beamclone = copy.deepcopy(self)
+        R0 = self.getmoment()[0]
+        fr0 = self.mat.fr
+        As0 = self.geo.As
+        if self.geo.rtype.lower() == 'rc':
+            darray = ds*np.ones(tarray.shape)
+            Rarray = np.ones(tarray.shape)
+            tinit = 10.
+            rcorr = 0.127    # mm/yr
+            for i,t in enumerate(tarray):
+                if t<tinit:
+                    darray[i] = ds
+                    Rarray[i] = 1.0
+                else:
+                    # look for the previous maintenance
+                    if mntplan['Mt'] is None:
+                        indx=0
+                    else:
+                        indx = np.searchsorted(mntplan['Mt'], t)
+                    if indx==0:    # no maintenance is applied
+                        dst = ds-rcorr*(t-tinit)
+                        darray[i] = dst
+                        # Rarray[i] = (dst/ds)**2
+                        beamclone.geo.Ar = As0*(dst/ds)**2
+                        Rt = beamclone.getmoment()[0]
+                        Rarray[i] = Rt/R0
+                    else:
+                        tlastmnt = mntplan['Mt'][indx-1]
+                        dt = t-tlastmnt
+                        if dt<mntplan['Me']:
+                            darray[i] = darray[i-1]
+                            Rarray[i] = Rarray[i-1]
+                        else:
+                            dst = darray[i-1]-rcorr
+                            darray[i] = dst
+                            # Rarray[i] = (dst/ds)**2
+                            beamclone.geo.Ar = As0*(dst/ds)**2
+                            Rt = beamclone.getmoment()[0]
+                            Rarray[i] = Rt/R0
+        elif self.geo.rtype.lower() == 'frp':
+            tday = tarray*360
+            # Rarray = frpdegrade(tday)
+            Rarray = np.ones(tarray.shape)
+            rofarray = frpdegrade(tday)
+            for i,ro in enumerate(rofarray):
+                beamclone.mat.fr = fr0*ro
+                Rt = beamclone.getmoment()[0]
+                Rarray[i] = Rt/R0
+        return Rarray
 
 def getrcbeam(price):
     cost = Cost(price)
