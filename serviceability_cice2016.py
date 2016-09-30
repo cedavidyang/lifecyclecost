@@ -13,19 +13,21 @@ for ib,beamEle in enumerate(beamarray):
     fc = beamEle.mat.fc
     frein = beamEle.mat.fr
     Mdl = 222.5e6
-    Mll = 550.4e6
-    # Mll = 274.5e6    #AASHTO: two design lanes divided equally among 5 girders
+    # Mll = 550.4e6
+    Mll = 289.63e6    #AASHTO: three design trucks divided equally among 5 girders
     [Rm, c] = beamEle.getmoment()
     if ib==0:
         Arein = np.sum(beamEle.geo.As)
         d = np.average(beamEle.geo.xs,weights=beamEle.geo.As)
         Erein = 200e3
-        Ma = Mdl+Mll
+        Ma = Mll
+        # Ma = Mdl+Mll
     elif ib==1:
         Arein = np.sum(beamEle.geo.Afb)
         d = np.average(beamEle.geo.xf,weights=beamEle.geo.Afb)
         Erein = 45e3
-        Ma = Mdl+Mll
+        # Ma = Mdl+Mll
+        Ma = Mll
     elif ib==2:
         Arein = np.sum(beamEle.geo.Afb)
         d = np.average(beamEle.geo.xf,weights=beamEle.geo.Afb)

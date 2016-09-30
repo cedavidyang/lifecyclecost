@@ -371,7 +371,7 @@ def getfrpbeam_cice2016(price=None):
     h=790.
     Ac = 400.*(790.-190.)+2600.*190.
     # Afb = np.array([4*819.+4*661.])
-    Afb = np.array([8*819.+2*819.])
+    Afb = np.array([8*819.+0*645.])
     Aft = 0.
     As = np.array([0.])
     xf = np.array([710.])
@@ -411,7 +411,7 @@ def getfrpcreep_cice2016(price=None):
     # define geometry
     h=790.
     Ac = 400.*(790.-190)+2600.*190.
-    Afb = np.array([8*819.+2*819.])
+    Afb = np.array([8*819.+0*645.])
     Aft = 0.
     As = np.array([0.])
     xf = np.array([710.])

@@ -112,7 +112,7 @@ if __name__ == '__main__':
     rcdeck = copy.deepcopy(rcbeam)
     rccolumn = copy.deepcopy(rcbeam)
     rcbridge = Bridge(rcbeam, 1, rccolumn, 0, rcdeck,
-            span=9.0, width=0.0, height=6., distance=distance)
+            span=9.1, width=0.0, height=6., distance=distance)
 
     # initial cost
     rcmatcost = rcbridge.matcost()
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     frpdeck = copy.deepcopy(frpbeam)
     frpcolumn = copy.deepcopy(frpbeam)
     frpbridge = Bridge(frpbeam, 1, frpcolumn, 0, frpdeck,
-            span=9.0, width=0.0, height=6., distance=distance)
+            span=9.1, width=0.0, height=6., distance=distance)
     # initial cost
     frpmatcost = frpbridge.matcost()
     frptranscost = frpbridge.transcost()
